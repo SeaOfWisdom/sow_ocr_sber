@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  ocr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./voltaic-mantra-387401-757254bf2fce.json:/voltaic-mantra-387401-757254bf2fce.json
+    ports:
+      - "50051:50051"
+    restart: unless-stopped
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - VISION_CREDENTIALS=${VISION_CREDENTIALS}
+    env_file:
+      - .env
+
+  test:
+    build:
+      context: .
+      dockerfile: DockerfileTest
+    depends_on:
+      - ocr
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - VISION_CREDENTIALS=${VISION_CREDENTIALS}
+    env_file:
+      - .env
+    volumes:
+      - ./test.jpg:/app/test_data/test.jpg

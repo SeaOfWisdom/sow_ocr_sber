@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package ocr;
+option go_package = "./proto";
+
+service OCR {
+  rpc ExtractText (ExtractTextRequest) returns (ExtractTextResponse) {}
+}
+
+message ExtractTextRequest {
+  bytes image = 1;
+  bool isPaper = 2;
+}
+
+message ExtractTextResponse {
+  string title = 1;
+  repeated string authors = 2;
+  string abstract = 3;
+  repeated string keywords = 4;
+  map<string, string> main = 5;
+}

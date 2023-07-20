@@ -1,0 +1,44 @@
+# Step 1: Building the application
+FROM golang:1.18.1-alpine AS builder
+
+# Install protoc and necessary libraries
+RUN apk add --no-cache protobuf git
+
+WORKDIR /src
+
+# Install protoc plugins
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# Copy go mod and sum files
+COPY ./sow_ocr/go.mod ./sow_ocr/go.sum ./
+
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+RUN go mod download
+
+# Copy the source from the current directory to the Working Directory inside the container
+COPY ./sow_ocr .
+
+# Generate sow_ocr/proto files
+WORKDIR /src/proto
+RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative ocr_service.proto
+
+# Back to root working directory
+WORKDIR /src
+
+# Build the Go test binary
+RUN CGO_ENABLED=0 GOOS=linux go test -c -o main_test .
+
+# Step 2: Setup runtime environment
+FROM alpine:latest
+
+# Install necessary runtime libraries
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+# Copy the Pre-built binary file from the previous stage
+COPY --from=builder /src/main_test .
+
+# Command to run the executable
+CMD ["./main_test"]
